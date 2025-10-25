@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: contract
+
+file:
+  output-dir: ./output
+server:
+  port: 8080

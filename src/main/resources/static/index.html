@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generate Word from Excel</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 40px; background: #f9f9f9; }
+        .container { max-width: 500px; margin: auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1);}
+        h2 { text-align: center; margin-bottom: 30px; }
+        input, button { width: 100%; padding: 10px; margin-bottom: 20px; font-size: 16px; }
+        button { cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 5px; }
+        button:hover { background-color: #0056b3; }
+        #loading { display: none; text-align: center; margin-top: 20px; }
+        #loading span { display: inline-block; padding: 10px 20px; background: #ffc107; border-radius: 5px; color: #000; font-weight: bold;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Generate Word from Excel</h2>
+    <label for="templateCode">Template Code:</label>
+    <input type="text" id="templateCode" value="OFFER">
+    <label for="fileInput">Select Excel File:</label>
+    <input type="file" id="fileInput" accept=".xlsx,.xls">
+    <button id="uploadBtn">OK</button>
+
+    <div id="loading"><span>Đang xử lý, vui lòng chờ...</span></div>
+</div>
+
+<script>
+    const uploadBtn = document.getElementById("uploadBtn");
+    const loadingDiv = document.getElementById("loading");
+
+    uploadBtn.addEventListener("click", async () => {
+        const input = document.getElementById("fileInput");
+        const templateCode = document.getElementById("templateCode").value.trim();
+
+        if (!input.files.length) {
+            alert("Please select a file!");
+            return;
+        }
+        if (!templateCode) {
+            alert("Please enter template code!");
+            return;
+        }
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("templateCode", templateCode);
+
+        try {
+            loadingDiv.style.display = "block";
+            uploadBtn.disabled = true;
+
+            const response = await fetch("/api/generate", {
+                method: "POST",
+                body: formData
+            });
+
+            if (!response.ok) {
+                // Lấy lỗi JSON từ server
+                const errorJson = await response.json();
+                const msg = errorJson.message || "Unknown error";
+                const stack = errorJson.stackTrace || "";
+                alert(`Error:\n${msg}\n\nStack trace:\n${stack}`);
+                return;
+            }
+
+            // Nếu thành công -> download file
+            const disposition = response.headers.get("Content-Disposition");
+            let fileName = "output.docx";
+            if (disposition && disposition.includes("filename=")) {
+                fileName = disposition.split("filename=")[1].replace(/"/g, '');
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
+        } catch (err) {
+            console.error(err);
+            alert("Error uploading or generating file: " + err.message);
+        } finally {
+            loadingDiv.style.display = "none";
+            uploadBtn.disabled = false;
+        }
+    });
+</script>
+
+</body>
+</html>
