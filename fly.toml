@@ -1,9 +1,9 @@
-# fly.toml app configuration file generated for autooffer on 2025-10-26T10:15:49Z
+# fly.toml app configuration file generated for auto-offer on 2025-10-26T10:27:52Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'autooffer'
+app = 'auto-offer'
 primary_region = 'sin'
 
 [build]
