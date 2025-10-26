@@ -1,30 +1,32 @@
-# Sử dụng Maven + JDK 21 làm base để build
+# ---- Stage 1: Build với Maven ----
 FROM maven:3.9.4-eclipse-temurin-21 AS build
 
 # Thư mục làm việc
 WORKDIR /app
 
-# Copy file pom.xml và tải dependencies offline
+# Copy file pom.xml trước để cache dependencies
 COPY pom.xml .
+
+# Tải offline dependencies (giúp build nhanh cho lần deploy tiếp theo)
 RUN mvn dependency:go-offline
 
 # Copy toàn bộ source code
 COPY src ./src
 
-# Build project, bỏ qua tests
-RUN mvn clean package -DskipTests
+# Build fat jar, bỏ qua tests
+RUN mvn clean package spring-boot:repackage -DskipTests
 
-# ---- Stage chạy ứng dụng ----
+# ---- Stage 2: Runtime ----
 FROM eclipse-temurin:21-jdk
 
 # Thư mục làm việc
 WORKDIR /app
 
-# Copy jar từ stage build
+# Copy jar đã build từ stage trước
 COPY --from=build /app/target/*.jar app.jar
 
-# Expose port
+# Expose port ứng dụng (phải trùng với internal_port trong fly.toml)
 EXPOSE 8080
 
-# CMD chạy Spring Boot
+# Command chạy Spring Boot
 CMD ["java", "-jar", "app.jar"]
